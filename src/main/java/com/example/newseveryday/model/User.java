@@ -2,13 +2,18 @@ package com.example.newseveryday.model;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "usr")
 @Data
-public class User {
+public class User implements UserDetails {
     @Id
     @SequenceGenerator(
             name = "user_id_sequence",
@@ -18,9 +23,6 @@ public class User {
     @JsonView(Views.ShotUser.class)
     private Long id;
 
-    @JsonView(Views.ShotUser.class)
-    private String username;
-
     private String password;
 
     @JsonView(Views.ShotUser.class)
@@ -28,4 +30,42 @@ public class User {
 
     @JsonView(Views.ShotUser.class)
     private String email;
+
+    @JsonView(Views.ShotUser.class)
+    @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    private Set<Role> roles = new HashSet<>();
+
+    private boolean isActive;
+    private static final long serialVersionUID = -7769347416115841247L;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return isActive;
+    }
+
+    public String getUsername() {
+        return email;
+    }
 }
