@@ -2,7 +2,9 @@ package com.example.newseveryday.model;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
@@ -13,7 +15,8 @@ import java.util.Set;
 @Entity
 @Table(name = "usr")
 @Data
-public class User implements UserDetails {
+@NoArgsConstructor
+public class AppUser implements UserDetails {
     @Id
     @SequenceGenerator(
             name = "user_id_sequence",

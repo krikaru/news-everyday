@@ -1,15 +1,14 @@
 package com.example.newseveryday.repo;
 
-import com.example.newseveryday.model.User;
+import com.example.newseveryday.model.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface UserRepo extends JpaRepository<User, Long> {
+public interface UserRepo extends JpaRepository<AppUser, Long> {
 
-    Optional<User> findByEmail(String email);
+    Optional<AppUser> findByEmail(String email);
 }
 

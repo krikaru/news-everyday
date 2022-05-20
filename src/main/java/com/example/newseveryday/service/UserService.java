@@ -1,10 +1,9 @@
 package com.example.newseveryday.service;
 
 import com.example.newseveryday.model.Role;
-import com.example.newseveryday.model.User;
+import com.example.newseveryday.model.AppUser;
 import com.example.newseveryday.repo.UserRepo;
 import lombok.Data;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,22 +18,26 @@ import java.util.Set;
 public class UserService implements UserDetailsService {
     private final UserRepo userRepo;
 
-    public User createUser(User user) {
+    public AppUser createUser(AppUser user) {
         user.setRoles(Set.of(Role.USER));
         user.setActive(true);
         return userRepo.save(user);
     }
 
-    public List<User> getAllUsers() {
+    public List<AppUser> getAllUsers() {
         return userRepo.findAll();
     }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Optional<User> optionalUser = userRepo.findByEmail(email);
+        Optional<AppUser> optionalUser = userRepo.findByEmail(email);
         if (optionalUser.isEmpty()) {
             throw new UsernameNotFoundException("User not found");
         }
         return optionalUser.get();
+    }
+
+    public AppUser getUserByEmail(String email) {
+        return userRepo.findByEmail(email).get();
     }
 }
