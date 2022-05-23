@@ -10,16 +10,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TokenUtils {
-    private Algorithm algorithm;
+    private final Algorithm algorithm;
 
     public TokenUtils(Algorithm algorithm) {
         this.algorithm = algorithm;
@@ -31,25 +30,25 @@ public class TokenUtils {
     }
 
     public String createAccessToken(AppUser user, String issuer) {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MINUTE, 30);
+
         return JWT.create()
                 .withSubject(user.getEmail())
-                .withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
+                .withExpiresAt(cal.getTime())
                 .withIssuer(issuer)
                 .withClaim("roles", user.getRoles().stream().map(Role::getAuthority).collect(Collectors.toList()))
                 .sign(algorithm);
     }
 
     public static void writeTokensToResponse(String access_token, String refresh_token, HttpServletResponse response) throws IOException {
-//        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.addCookie(new Cookie("refresh_token", refresh_token));
-        response.addHeader("access_token", access_token);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        response.sendRedirect("http://localhost:8081/");
-//        Map<String, String> tokens = new HashMap<>();
-//        tokens.put("access_token", access_token);
-//        tokens.put("refresh_token", refresh_token);
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("access_token", access_token);
+        tokens.put("refresh_token", refresh_token);
 
-//        new ObjectMapper().writeValue(response.getOutputStream(), tokens);
+        new ObjectMapper().writeValue(response.getOutputStream(), tokens);
     }
 
     public static void writeErrorToResponse(HttpServletResponse response, Exception exception) throws IOException {
@@ -66,9 +65,12 @@ public class TokenUtils {
     public String createRefreshToken(AppUser user, String issuer) {
         //        response.setHeader("access_token", access_token);
         //        response.setHeader("refresh_token", refresh_token);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.YEAR, 1);
+
         return JWT.create()
                 .withSubject(user.getEmail())
-                .withExpiresAt(new Date(System.currentTimeMillis() + 30 * 60 *1000))
+                .withExpiresAt(cal.getTime())
                 .withIssuer(issuer)
                 .sign(algorithm);
     }

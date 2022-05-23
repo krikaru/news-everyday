@@ -41,8 +41,9 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication) throws IOException, ServletException {
         AppUser appUser = (AppUser) authentication.getPrincipal();
 
+        String access_token = tokenUtils.createAccessToken(appUser, request.getRequestURL().toString());
         String refresh_token = tokenUtils.createRefreshToken(appUser, request.getRequestURL().toString());
 
-        TokenUtils.writeTokensToResponse("", refresh_token, response);
+        TokenUtils.writeTokensToResponse(access_token, refresh_token, response);
     }
 }
