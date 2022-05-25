@@ -15,7 +15,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import util.TokenUtils;
 
@@ -33,7 +33,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public PasswordEncoder getPasswordEncoder() {
-        return new BCryptPasswordEncoder();
+        return NoOpPasswordEncoder.getInstance();
     }
 
     @Override
@@ -54,9 +54,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter(authenticationManagerBean(), getTokenUtils());
+        customAuthenticationFilter.setFilterProcessesUrl("/api/login");
 
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-        http.authorizeRequests().antMatchers("/login", "/token/refresh").permitAll();
+        http.authorizeRequests().antMatchers("/api/login", "/api/token/refresh").permitAll();
         http.authorizeRequests().anyRequest().authenticated();
 
         http.formLogin().usernameParameter("email");

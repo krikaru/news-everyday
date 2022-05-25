@@ -20,13 +20,13 @@ public class AuthController {
     private final UserRepo userRepo;
     private final TokenUtils tokenUtils;
 
-    @GetMapping("/token/refresh")
+    @GetMapping("/api/token/refresh")
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer_")) {
             try {
-                String refresh_token = authorizationHeader.substring("Bearer ".length());
+                String refresh_token = authorizationHeader.substring("Bearer_".length());
 
                 DecodedJWT decodedJWT = tokenUtils.getDecoder(refresh_token);
                 String email = decodedJWT.getSubject();
