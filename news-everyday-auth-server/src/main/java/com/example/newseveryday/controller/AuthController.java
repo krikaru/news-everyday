@@ -2,12 +2,12 @@ package com.example.newseveryday.controller;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newseveryday.model.AppUser;
-import com.example.newseveryday.repo.UserRepo;
+import com.example.newseveryday.service.UserService;
+import com.example.newseveryday.util.TokenUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import util.TokenUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -17,7 +17,7 @@ import java.util.Optional;
 @RestController
 @AllArgsConstructor
 public class AuthController {
-    private final UserRepo userRepo;
+    private final UserService userService;
     private final TokenUtils tokenUtils;
 
     @GetMapping("/api/token/refresh")
@@ -30,7 +30,7 @@ public class AuthController {
 
                 DecodedJWT decodedJWT = tokenUtils.getDecoder(refresh_token);
                 String email = decodedJWT.getSubject();
-                Optional<AppUser> user = userRepo.findByEmail(email);
+                Optional<AppUser> user = userService.findByEmail(email);
 
                 String access_token = tokenUtils.createAccessToken(user.get(), request.getRequestURL().toString());
 
@@ -39,7 +39,7 @@ public class AuthController {
                 TokenUtils.writeErrorToResponse(response, exception);
             }
         } else {
-            throw new RuntimeException("Refresh token is missing");
+            TokenUtils.writeErrorToResponse(response, new RuntimeException("Refresh token is missing"));
         }
     }
 }

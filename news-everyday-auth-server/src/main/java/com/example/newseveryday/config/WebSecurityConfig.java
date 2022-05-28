@@ -57,7 +57,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         customAuthenticationFilter.setFilterProcessesUrl("/api/login");
 
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-        http.authorizeRequests().antMatchers("/api/login", "/api/token/refresh").permitAll();
+        http.authorizeRequests().antMatchers("/api/user/create", "/api/login", "/api/token/refresh").permitAll();
         http.authorizeRequests().anyRequest().authenticated();
 
         http.formLogin().usernameParameter("email");
