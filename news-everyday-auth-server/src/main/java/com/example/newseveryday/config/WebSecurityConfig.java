@@ -17,7 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import util.TokenUtils;
+import com.example.newseveryday.util.TokenUtils;
 
 import java.util.Optional;
 

@@ -1,4 +1,4 @@
-package util;
+package com.example.newseveryday.util;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -63,8 +63,6 @@ public class TokenUtils {
     }
 
     public String createRefreshToken(AppUser user, String issuer) {
-        //        response.setHeader("access_token", access_token);
-        //        response.setHeader("refresh_token", refresh_token);
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.YEAR, 1);
 

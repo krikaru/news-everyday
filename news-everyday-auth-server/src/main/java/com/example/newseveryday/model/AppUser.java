@@ -14,7 +14,7 @@ import java.util.Set;
 @Data
 public class AppUser implements UserDetails {
     @Id
-    @SequenceGenerator(name = "user_id_sequence", sequenceName = "user_id_sequence")
+    @SequenceGenerator(name = "user_id_sequence", sequenceName = "user_id_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_id_sequence")
     private Long id;
 
@@ -29,7 +29,7 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Set<Role> roles = new HashSet<>();
 
-    private boolean isActive;
+    private boolean active;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -58,6 +58,6 @@ public class AppUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive;
+        return active;
     }
 }
