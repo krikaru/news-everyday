@@ -28,7 +28,7 @@ public class UserController {
             @RequestBody @Valid UserCreateDto userDto,
             BindingResult bindingResult
     ) {
-        if (userDto.getPassword().equals(userDto.getConfirmPassword())) {
+        if (!userDto.getPassword().equals(userDto.getConfirmPassword())) {
             BindingResultUtils.addErrors(bindingResult, "confirmPassword",
                     "Пароли не совпадают!");
         }
