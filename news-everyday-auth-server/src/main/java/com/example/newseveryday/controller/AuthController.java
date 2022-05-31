@@ -30,9 +30,11 @@ public class AuthController {
 
                 DecodedJWT decodedJWT = tokenUtils.getDecoder(refresh_token);
                 String email = decodedJWT.getSubject();
-                Optional<AppUser> user = userService.findByEmail(email);
 
-                String access_token = tokenUtils.createAccessToken(user.get(), request.getRequestURL().toString());
+                Optional<AppUser> optUser = userService.findByEmail(email);
+                AppUser user = optUser.orElseThrow(() -> new NullPointerException("User not found"));
+
+                String access_token = tokenUtils.createAccessToken(user, request.getRequestURL().toString());
 
                 TokenUtils.writeTokensToResponse(access_token, refresh_token, response);
             } catch (Exception exception) {
