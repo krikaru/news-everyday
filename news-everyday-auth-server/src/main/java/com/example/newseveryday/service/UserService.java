@@ -5,6 +5,7 @@ import com.example.newseveryday.model.AppUser;
 import com.example.newseveryday.model.Role;
 import com.example.newseveryday.repo.UserRepo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -14,13 +15,14 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepo userRepo;
+    private final PasswordEncoder passwordEncoder;
 
     public AppUser create(UserCreateDto userDto) {
         AppUser user = new AppUser();
 
         user.setEmail(userDto.getEmail());
         user.setFirstName(userDto.getFirstName());
-        user.setPassword(userDto.getPassword());
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         user.setActive(true);
         user.setRoles(Set.of(Role.USER));
 

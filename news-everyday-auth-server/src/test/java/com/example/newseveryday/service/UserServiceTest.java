@@ -7,6 +7,9 @@ import com.example.newseveryday.repo.UserRepo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Set;
 
@@ -17,11 +20,13 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
     UserRepo userRepo;
     UserService userService;
+    PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
         userRepo = mock(UserRepo.class);
-        userService = new UserService(userRepo);
+        passwordEncoder = NoOpPasswordEncoder.getInstance();
+        userService = new UserService(userRepo, passwordEncoder);
     }
 
     @Test
