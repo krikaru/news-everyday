@@ -35,6 +35,8 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Set<Role> roles = new HashSet<>();
 
+    private String activationCode;
+
     private boolean active;
 
     @Override

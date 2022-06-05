@@ -9,12 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/user")
@@ -38,13 +38,22 @@ public class UserController {
         }
 
         if (!bindingResult.hasErrors()) {
-            return userService.create(userDto) == null ?
-                    new ResponseEntity<>(HttpStatus.BAD_REQUEST) :
-                    new ResponseEntity<>(userDto, HttpStatus.CREATED);
+            userService.create(userDto);
+            return new ResponseEntity<>(userDto, HttpStatus.CREATED);
         } else {
             userDto.setErrors(BindingResultUtils.getErrors(bindingResult));
             return new ResponseEntity<>(userDto, HttpStatus.BAD_REQUEST);
         }
 
+    }
+
+    @GetMapping("activate/{activationCode}")
+    public ResponseEntity<Map<String, String>> activateUser(@PathVariable String activationCode) throws IOException {
+        boolean isActivated = userService.activateUser(activationCode);
+
+        if (isActivated) {
+             return new ResponseEntity<>(Map.of("error", "Account hasn't been activated"), HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
