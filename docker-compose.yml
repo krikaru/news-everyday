@@ -2,7 +2,6 @@ version: "3"
 
 services:
   news-auth:
-    image: newsauth
     build: ./news-everyday-auth-server
     container_name: newsauth
     ports:
@@ -12,8 +11,9 @@ services:
       - postgres
     depends_on:
       - postgresqldb
+      - rabbitmq
+      - notification
   notification:
-    image: notification
     build: ./notification
     container_name: notification
     ports:

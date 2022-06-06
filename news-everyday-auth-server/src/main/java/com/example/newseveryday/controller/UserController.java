@@ -52,8 +52,8 @@ public class UserController {
         boolean isActivated = userService.activateUser(activationCode);
 
         if (isActivated) {
-             return new ResponseEntity<>(Map.of("error", "Account hasn't been activated"), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.OK);
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(Map.of("error", "Account hasn't been activated"), HttpStatus.BAD_REQUEST);
     }
 }

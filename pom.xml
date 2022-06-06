@@ -8,6 +8,7 @@
         <module>news-everyday-api</module>
         <module>news-everyday-auth-server</module>
         <module>eureka-server</module>
+        <module>notification</module>
     </modules>
 
     <groupId>com.example</groupId>
