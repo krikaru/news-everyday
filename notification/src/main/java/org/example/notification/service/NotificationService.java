@@ -1,5 +1,6 @@
 package org.example.notification.service;
 
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.example.notification.model.NotificationRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@AllArgsConstructor
 public class NotificationService {
     @Autowired
     JavaMailSender mailSender;
