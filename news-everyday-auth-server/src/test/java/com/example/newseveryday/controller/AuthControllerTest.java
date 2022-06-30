@@ -1,10 +1,12 @@
 package com.example.newseveryday.controller;
 
-import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.example.newseveryday.repo.UserRepo;
+import com.example.newseveryday.service.AuthService;
 import com.example.newseveryday.service.UserService;
 import com.example.newseveryday.util.TokenUtils;
 import org.apache.http.HttpHeaders;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,12 +21,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import javax.servlet.http.HttpServletResponse;
-import java.util.Calendar;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.description;
-import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(AuthController.class)
@@ -36,42 +35,65 @@ class AuthControllerTest {
     UserService userService;
     @MockBean
     UserRepo userRepo;
-
+    @MockBean
+    AuthService authService;
     MockedStatic<TokenUtils> staticTokenUtils;
-    MockedStatic<Calendar> staticCalendar;
 
-    MockedStatic<JWT> jwt;
     ArgumentCaptor<RuntimeException> capturedException;
+
     @BeforeEach
     void setUp() {
-        this.staticCalendar = mockStatic(Calendar.class);
-        this.jwt = mockStatic(JWT.class);
         this.staticTokenUtils = Mockito.mockStatic(TokenUtils.class);
         this.capturedException = ArgumentCaptor.forClass(RuntimeException.class);
     }
 
+    @AfterEach
+    void tearDown() {
+        this.staticTokenUtils.close();
+    }
+
     @Test
-    void respondingErrorWhenHeaderAuthorizationHaveWrongFormat() throws Exception {
+    void refreshToken_respondingErrorWhenHeaderAuthorizationIsNotValid() throws Exception {
+        when(authService.createAccessToken(any(), any())).thenThrow(JWTVerificationException.class);
+
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/api/token/refresh")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer_wrongFormat"));
 
-        staticTokenUtils.verify(() -> TokenUtils.writeErrorToResponse(any(HttpServletResponse.class), capturedException.capture()));
-        assertThat(capturedException.getValue().getMessage())
-                .as("Exception message wrong!")
-                .isEqualTo("Token isn't valid");
+        staticTokenUtils.verify(() -> TokenUtils.writeErrorToResponse(any(HttpServletResponse.class), any()),
+                description("Header isn't valid therefore must be invoked writeErrorToResponse()"));
     }
 
     @Test
-    void respondingErrorWhenHeaderAuthorizationIsNull() throws Exception {
+    void refreshToken_respondingErrorWhenHeaderAuthorizationIsNull() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/api/token/refresh"));
 
 
         staticTokenUtils.verify(() -> TokenUtils.writeErrorToResponse(any(HttpServletResponse.class), capturedException.capture()),
-                description("Header is null -> must be invoked writeErrorToResponse()"));
-        assertThat(capturedException.getValue().getMessage())
-                .as("Exception message wrong!")
-                .isEqualTo("Refresh token is missing");
+                description("Header is null therefore must be invoked writeErrorToResponse()"));
+    }
+
+    @Test
+    void refreshToken_respondingErrorWhenHeaderAuthorizationNotStartsWithBearer() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders
+                .get("/api/token/refresh")
+                .header(HttpHeaders.AUTHORIZATION, "wrongFormat"));
+
+
+        staticTokenUtils.verify(() -> TokenUtils.writeErrorToResponse(any(HttpServletResponse.class), capturedException.capture()),
+                description("Header isn't start with \"Bearer_\" therefore must be invoked writeErrorToResponse()"));
+    }
+
+    @Test
+    void refreshToken_respondingTokensWhenHeaderAuthorizationIsValid() throws Throwable {
+        when(authService.createAccessToken(any(), any())).thenReturn("Bearer_rightFormat");
+
+        mockMvc.perform(MockMvcRequestBuilders
+                .get("/api/token/refresh")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer_rightFormat"));
+
+        staticTokenUtils.verify(() -> TokenUtils.writeTokensToResponse(anyString(), anyString(), any(HttpServletResponse.class)),
+                description("Header is valid therefore must be invoked writeTokensToResponse()"));
     }
 }
