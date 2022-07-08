@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -40,40 +39,36 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
         } else {
             String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
             Cookie cookieRefreshToken = CookieUtils.findCookieByName(request, "refresh_token");
-            String newAccessToken;
+            String newAccessToken = null;
 
-            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer_")) {
-                try {
-                    String token = authorizationHeader.substring("Bearer_".length());
+            if (authorizationHeader == null){
+                newAccessToken = tryToGetNewAccessToken(cookieRefreshToken, response);
+            } else {
+                if (authorizationHeader.startsWith("Bearer_")) {
+                    try {
+                        String token = authorizationHeader.substring("Bearer_".length());
 
-                    DecodedJWT decodedJWT = tokenUtils.getDecoderIfVerify(token);
+                        DecodedJWT decodedJWT = tokenUtils.getDecoderIfVerify(token);
 
-                    setAuthentication(decodedJWT);
+                        setAuthentication(decodedJWT);
 
-                    filterChain.doFilter(request, response);
-                } catch (Exception exception) {
-                    newAccessToken = tryToGetNewAccessToken(cookieRefreshToken, response);
-                    if (newAccessToken == null) {
-                        response.sendRedirect("http://localhost:8080/user/auth");
-                    } else {
                         filterChain.doFilter(request, response);
+                    } catch (Exception exception) {
+                        newAccessToken = tryToGetNewAccessToken(cookieRefreshToken, response);
                     }
                 }
-            } else if (authorizationHeader == null){
-                newAccessToken = tryToGetNewAccessToken(cookieRefreshToken, response);
-                if (newAccessToken == null) {
-                    response.sendRedirect("http://localhost:8080/user/auth");
-                } else {
-                    filterChain.doFilter(request, response);
-                }
-            } else {
+            }
+
+            if (newAccessToken == null) {
                 response.sendRedirect("http://localhost:8080/user/auth");
+            } else {
+                filterChain.doFilter(request, response);
             }
         }
     }
 
     private String tryToGetNewAccessToken(Cookie cookieRefreshToken, HttpServletResponse response) {
-        String newAccessToken = tryToGetRefreshedToken(cookieRefreshToken);
+        String newAccessToken = getAccessTokenFromCookie(cookieRefreshToken);
 
         if (newAccessToken != null) {
 
@@ -100,13 +95,13 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 
-    private String tryToGetRefreshedToken(Cookie cookieRefreshToken) {
+    private String getAccessTokenFromCookie(Cookie cookieRefreshToken) {
         if (cookieRefreshToken != null){
             String refreshToken = cookieRefreshToken.getValue().substring("Bearer_".length());
             try {
                 tokenUtils.getDecoderIfVerify(refreshToken);
 
-                TokensResponseDto tokensResponseDto = getRefreshedToken(refreshToken);
+                TokensResponseDto tokensResponseDto = getNewTokens(refreshToken);
 
                 return tokensResponseDto != null ? tokensResponseDto.getAccess_token() : null;
             } catch (Exception exception) {
@@ -117,7 +112,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
         }
     }
 
-    private TokensResponseDto getRefreshedToken(String refreshToken) {
+    private TokensResponseDto getNewTokens(String refreshToken) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("AUTHORIZATION", "Bearer_" + refreshToken);
@@ -125,7 +120,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
 
         ResponseEntity<TokensResponseDto> tokensResponseDto = restTemplate.exchange(
-                "http://NEWS-AUTH/api/token/refresh",
+                "http://localhost:8080/api/token/refresh",
                 HttpMethod.GET, requestEntity, TokensResponseDto.class);
         return tokensResponseDto.getBody();
     }
