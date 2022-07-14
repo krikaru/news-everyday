@@ -11,24 +11,22 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.client.RestTemplate;
 
 @Configuration
 @RequiredArgsConstructor
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Value("${secure.jwt.secret}")
-    private final String secret;
-    private final RestTemplate restTemplate;
+    private String secret;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests().antMatchers(HttpMethod.POST, "/user/auth").permitAll();
+        http.authorizeRequests().antMatchers(HttpMethod.POST, "/user/auth", "/user/create").permitAll();
         http.authorizeRequests().antMatchers(HttpMethod.GET, "/user/test").hasAnyAuthority("USER");
         http.authorizeRequests().anyRequest().authenticated();
 
         http.csrf().disable();
 
-        http.addFilterBefore(new CustomAuthorizationFilter(getTokenUtils(), restTemplate), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new CustomAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
     @Bean
