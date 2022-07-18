@@ -33,7 +33,6 @@ public class AuthorizationService {
         String newAccessToken = getAccessTokenFromCookie(cookieRefreshToken);
 
         if (newAccessToken != null) {
-
             try {
                 DecodedJWT decodedJWT = tokenUtils.getDecoderIfVerify(newAccessToken);
 
@@ -79,15 +78,14 @@ public class AuthorizationService {
     }
 
     public TokensResponseDto getNewTokens(String refreshToken) {
-
         HttpHeaders headers = new HttpHeaders();
         headers.set("AUTHORIZATION", "Bearer_" + refreshToken);
 
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
 
-        ResponseEntity<TokensResponseDto> tokensResponseDto = restTemplate.exchange(
+        ResponseEntity<TokensResponseDto> responseEntity = restTemplate.exchange(
                 "http://localhost:8080/api/token/refresh",
                 HttpMethod.GET, requestEntity, TokensResponseDto.class);
-        return tokensResponseDto.getBody();
+        return responseEntity == null ? null : responseEntity.getBody();
     }
 }
