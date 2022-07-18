@@ -30,7 +30,8 @@ public class AuthorizationService {
     private RestTemplate restTemplate;
 
     public String tryToGetNewAccessToken(Cookie cookieRefreshToken, HttpServletResponse response) {
-        String newAccessToken = getAccessTokenFromCookie(cookieRefreshToken);
+        TokensResponseDto tokensResponseDto = attemptToRefreshTokens(cookieRefreshToken);
+        String newAccessToken = tokensResponseDto.getAccess_token();
 
         if (newAccessToken != null) {
             try {
@@ -39,7 +40,9 @@ public class AuthorizationService {
                 setAuthentication(decodedJWT);
 
                 response.setHeader("AUTHORIZATION", "Bearer_" + newAccessToken);
-
+                Cookie refreshCookie = new Cookie("refresh_token", "Bearer_" + tokensResponseDto.getRefresh_token());
+                refreshCookie.setHttpOnly(true);
+                response.addCookie(refreshCookie);
                 return newAccessToken;
             } catch (JWTVerificationException e) {
                 return null;
@@ -60,15 +63,13 @@ public class AuthorizationService {
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 
-    public String getAccessTokenFromCookie(Cookie cookieRefreshToken) {
+    public TokensResponseDto attemptToRefreshTokens(Cookie cookieRefreshToken) {
         if (cookieRefreshToken != null && cookieRefreshToken.getValue().startsWith("Bearer_")){
             String refreshToken = cookieRefreshToken.getValue().substring("Bearer_".length());
             try {
                 tokenUtils.getDecoderIfVerify(refreshToken);
 
-                TokensResponseDto tokensResponseDto = getNewTokens(refreshToken);
-
-                return tokensResponseDto != null ? tokensResponseDto.getAccess_token() : null;
+                return getNewTokens(refreshToken);
             } catch (Exception exception) {
                 return null;
             }
