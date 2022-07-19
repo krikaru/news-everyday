@@ -11,4 +11,10 @@ public class CookieUtils {
                 .filter(cookie -> name.equals(cookie.getName()))
                 .findFirst().orElse(null);
     }
+
+    public static Cookie createHttpOnlyCookie(String name, String value) {
+        Cookie refreshCookie = new Cookie(name, value);
+        refreshCookie.setHttpOnly(true);
+        return refreshCookie;
+    }
 }

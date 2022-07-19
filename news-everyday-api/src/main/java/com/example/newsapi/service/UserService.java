@@ -1,12 +1,16 @@
 package com.example.newsapi.service;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newsapi.dto.TokensResponseDto;
 import com.example.newsapi.dto.UserRequestDto;
 import com.example.newsapi.model.AppUser;
 import com.example.newsapi.model.Role;
 import com.example.newsapi.repo.UserRepo;
+import com.example.newsapi.util.CookieUtils;
 import com.example.newsapi.util.TokenUtils;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -18,11 +22,13 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserService {
-    private final UserRepo userRepo;
-    private final TokenUtils tokenUtils;
-    private final RestTemplate restTemplate;
+    private UserRepo userRepo;
+    private TokenUtils tokenUtils;
+    private RestTemplate restTemplate;
+    private AuthorizationService authorizationService;
 
     public AppUser createUser(AppUser user) {
         return userRepo.save(user);
@@ -34,16 +40,32 @@ public class UserService {
 
     public AppUser auth(UserRequestDto userRequestDto, HttpServletResponse response) {
         TokensResponseDto tokensResponseDto = restTemplate.postForObject(
-                "http://NEWS-AUTH/api/login",
+                "http://localhost:8080/api/login",
                 userRequestDto,
                 TokensResponseDto.class
         );
 
-        if (tokensResponseDto == null) {
+        if (tokensResponseDto == null) return null;
+
+        DecodedJWT decoder;
+        try {
+            decoder = tokenUtils.getDecoderIfVerify(tokensResponseDto.getAccess_token());
+        } catch (JWTVerificationException e) {
             return null;
         }
 
-        DecodedJWT decoder = tokenUtils.getDecoderIfVerify(tokensResponseDto.getAccess_token());
+        AppUser user = extractUser(decoder);
+        authorizationService.setAuthentication(decoder);
+
+        Cookie refreshCookie = CookieUtils.createHttpOnlyCookie(
+                "refresh_token", "Bearer_" + tokensResponseDto.getRefresh_token());
+
+        response.addCookie(refreshCookie);
+        response.setHeader("AUTHORIZATION", "Bearer_" + tokensResponseDto.getAccess_token());
+        return user;
+    }
+
+    public AppUser extractUser(DecodedJWT decoder) {
         String email = decoder.getSubject();
 
         Optional<AppUser> userOptional = userRepo.findByEmail(email);
@@ -53,17 +75,10 @@ public class UserService {
             user.setEmail(email);
             user.setFirstName(user.getEmail().split("@")[0]);
             user.setRoles(Set.of(decoder.getClaim("roles").asArray(Role.class)));
-            userRepo.save(user);
+            user = userRepo.save(user);
         } else {
             user = userOptional.get();
         }
-
-        Cookie refreshCookie = new Cookie("refresh_token", "Bearer_" + tokensResponseDto.getRefresh_token());
-        refreshCookie.setHttpOnly(true);
-
-        response.addCookie(refreshCookie);
-        response.setHeader("AUTHORIZATION", "Bearer_" + tokensResponseDto.getAccess_token());
-
         return user;
     }
 }
