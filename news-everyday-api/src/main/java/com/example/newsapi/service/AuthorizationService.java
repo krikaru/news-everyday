@@ -4,8 +4,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newsapi.dto.TokensResponseDto;
 import com.example.newsapi.util.TokenUtils;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,15 +22,14 @@ import java.util.Arrays;
 import java.util.Collection;
 
 @Service
-@AllArgsConstructor
-@NoArgsConstructor
+@RequiredArgsConstructor
 public class AuthorizationService {
-    private TokenUtils tokenUtils;
-    private RestTemplate restTemplate;
+    private final TokenUtils tokenUtils;
+    private final RestTemplate restTemplate;
 
     public String tryToGetNewAccessToken(Cookie cookieRefreshToken, HttpServletResponse response) {
         TokensResponseDto tokensResponseDto = attemptToRefreshTokens(cookieRefreshToken);
-        String newAccessToken = tokensResponseDto.getAccess_token();
+        String newAccessToken = tokensResponseDto == null ? null : tokensResponseDto.getAccess_token();
 
         if (newAccessToken != null) {
             try {

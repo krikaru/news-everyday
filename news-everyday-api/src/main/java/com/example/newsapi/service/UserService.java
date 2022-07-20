@@ -9,8 +9,6 @@ import com.example.newsapi.model.Role;
 import com.example.newsapi.repo.UserRepo;
 import com.example.newsapi.util.CookieUtils;
 import com.example.newsapi.util.TokenUtils;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -22,13 +20,12 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-@AllArgsConstructor
-@NoArgsConstructor
+@RequiredArgsConstructor
 public class UserService {
-    private UserRepo userRepo;
-    private TokenUtils tokenUtils;
-    private RestTemplate restTemplate;
-    private AuthorizationService authorizationService;
+    private final UserRepo userRepo;
+    private final TokenUtils tokenUtils;
+    private final RestTemplate restTemplate;
+    private final AuthorizationService authorizationService;
 
     public AppUser createUser(AppUser user) {
         return userRepo.save(user);

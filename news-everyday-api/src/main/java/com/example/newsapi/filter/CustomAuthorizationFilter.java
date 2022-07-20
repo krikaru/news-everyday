@@ -4,10 +4,9 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newsapi.service.AuthorizationService;
 import com.example.newsapi.util.CookieUtils;
 import com.example.newsapi.util.TokenUtils;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -17,11 +16,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@AllArgsConstructor
-@NoArgsConstructor
+@RequiredArgsConstructor
+@Component
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
-    private TokenUtils tokenUtils;
-    private AuthorizationService authorizationService;
+    private final TokenUtils tokenUtils;
+    private final AuthorizationService authorizationService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -31,7 +30,6 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
             String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
             Cookie cookieRefreshToken = CookieUtils.findCookieByName(request, "refresh_token");
             String newAccessToken;
-
 
             if (authorizationHeader == null){
                 newAccessToken = authorizationService.tryToGetNewAccessToken(cookieRefreshToken, response);
