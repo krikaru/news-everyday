@@ -24,7 +24,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (request.getServletPath().equals("/user/auth") || request.getServletPath().equals("/user/token/refresh")) {
+        if (request.getServletPath().equals("/api/user/auth") || request.getServletPath().equals("/api/user/token/refresh")) {
             filterChain.doFilter(request, response);
         } else {
             String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -51,7 +51,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
             }
 
             if (newAccessToken == null) {
-                response.sendRedirect("http://localhost:8080/user/auth");
+                response.sendRedirect("http://localhost:8081/api/user/auth");
             } else {
                 filterChain.doFilter(request, response);
             }

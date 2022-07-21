@@ -15,6 +15,7 @@ public class CookieUtils {
     public static Cookie createHttpOnlyCookie(String name, String value) {
         Cookie refreshCookie = new Cookie(name, value);
         refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/");
         return refreshCookie;
     }
 }

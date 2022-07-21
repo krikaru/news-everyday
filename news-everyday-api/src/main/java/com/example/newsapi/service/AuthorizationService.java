@@ -3,6 +3,7 @@ package com.example.newsapi.service;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newsapi.dto.TokensResponseDto;
+import com.example.newsapi.util.CookieUtils;
 import com.example.newsapi.util.TokenUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
@@ -38,8 +39,8 @@ public class AuthorizationService {
                 setAuthentication(decodedJWT);
 
                 response.setHeader("AUTHORIZATION", "Bearer_" + newAccessToken);
-                Cookie refreshCookie = new Cookie("refresh_token", "Bearer_" + tokensResponseDto.getRefresh_token());
-                refreshCookie.setHttpOnly(true);
+                Cookie refreshCookie = CookieUtils.createHttpOnlyCookie("refresh_token",
+                        "Bearer_" + tokensResponseDto.getRefresh_token());
                 response.addCookie(refreshCookie);
                 return newAccessToken;
             } catch (JWTVerificationException e) {
