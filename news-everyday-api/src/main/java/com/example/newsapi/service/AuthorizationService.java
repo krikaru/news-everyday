@@ -66,7 +66,7 @@ public class AuthorizationService {
             Arrays.stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
         }
         UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(email, null, authorities);
+                new UsernamePasswordAuthenticationToken(user.orElse(null), null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 

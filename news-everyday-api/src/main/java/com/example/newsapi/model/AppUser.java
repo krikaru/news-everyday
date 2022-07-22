@@ -1,8 +1,11 @@
 package com.example.newsapi.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -13,7 +16,9 @@ import java.util.Set;
 @Entity
 @Table(name = "usr")
 @Data
+@ToString(of = {"id", "email"})
 @NoArgsConstructor
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class AppUser {
     @Id
     @SequenceGenerator(
@@ -37,6 +42,7 @@ public class AppUser {
     private Set<Role> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "author")
+    @JsonView(Views.FullUser.class)
     private List<News> newsList = new ArrayList<>();
 
     private static final long serialVersionUID = -7769347416115841247L;

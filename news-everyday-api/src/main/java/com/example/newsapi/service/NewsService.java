@@ -1,5 +1,6 @@
 package com.example.newsapi.service;
 
+import com.example.newsapi.model.AppUser;
 import com.example.newsapi.model.News;
 import com.example.newsapi.repo.NewsRepo;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,8 @@ public class NewsService {
         return newsRepo.findAll();
     }
 
-    public News save(News news) {
+    public News save(AppUser author, News news) {
+        news.setAuthor(author);
         return newsRepo.save(news);
     }
 }
