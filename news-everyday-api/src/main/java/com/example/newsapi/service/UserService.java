@@ -9,31 +9,38 @@ import com.example.newsapi.model.Role;
 import com.example.newsapi.repo.UserRepo;
 import com.example.newsapi.util.CookieUtils;
 import com.example.newsapi.util.TokenUtils;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 public class UserService {
     private final UserRepo userRepo;
     private final TokenUtils tokenUtils;
     private final RestTemplate restTemplate;
     private final AuthorizationService authorizationService;
 
-    public AppUser createUser(AppUser user) {
-        return userRepo.save(user);
+    public UserService(UserRepo userRepo, TokenUtils tokenUtils,
+                       RestTemplate restTemplate, @Lazy AuthorizationService authorizationService) {
+        this.userRepo = userRepo;
+        this.tokenUtils = tokenUtils;
+        this.restTemplate = restTemplate;
+        this.authorizationService = authorizationService;
     }
 
-    public List<AppUser> getAllUsers() {
-        return userRepo.findAll();
-    }
+
+//    public AppUser createUser(AppUser user) {
+//        return userRepo.save(user);
+//    }
+//
+//    public List<AppUser> getAllUsers() {
+//        return userRepo.findAll();
+//    }
 
     public AppUser auth(UserRequestDto userRequestDto, HttpServletResponse response) {
         TokensResponseDto tokensResponseDto = restTemplate.postForObject(
@@ -77,5 +84,9 @@ public class UserService {
             user = userOptional.get();
         }
         return user;
+    }
+
+    public Optional<AppUser> findByEmail(String email) {
+        return userRepo.findByEmail(email);
     }
 }

@@ -3,6 +3,7 @@ package com.example.newsapi.service;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newsapi.dto.TokensResponseDto;
+import com.example.newsapi.model.AppUser;
 import com.example.newsapi.util.CookieUtils;
 import com.example.newsapi.util.TokenUtils;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +22,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthorizationService {
     private final TokenUtils tokenUtils;
     private final RestTemplate restTemplate;
+    private final UserService userService;
 
     public String tryToGetNewAccessToken(Cookie cookieRefreshToken, HttpServletResponse response) {
         TokensResponseDto tokensResponseDto = attemptToRefreshTokens(cookieRefreshToken);
@@ -54,9 +57,14 @@ public class AuthorizationService {
     public void setAuthentication(DecodedJWT decodedJWT) {
         String email = decodedJWT.getSubject();
         String [] roles = decodedJWT.getClaim("roles").asArray(String.class);
-        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        Arrays.stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
 
+        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        Optional<AppUser> user = userService.findByEmail(email);
+        if (user.isPresent()) {
+            user.get().getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority(role.getAuthority())));
+        } else {
+            Arrays.stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+        }
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(email, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
