@@ -18,7 +18,6 @@ import java.util.Set;
 @Data
 @ToString(of = {"id", "email"})
 @NoArgsConstructor
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class AppUser {
     @Id
     @SequenceGenerator(

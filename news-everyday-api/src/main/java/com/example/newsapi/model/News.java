@@ -2,8 +2,10 @@ package com.example.newsapi.model;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import lombok.Data;
+import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 
 @Entity
 @Data
@@ -15,8 +17,13 @@ public class News {
     private Long id;
 
     @JsonView(Views.ShortNews.class)
+    @NotBlank(message = "У новости должен быть заголовок!")
+    @Length(message = "Длина закголовка должна быть не меньше 5 и не больше 100 символов.", max=100, min = 5)
     private String header;
+
     @JsonView(Views.ShortNews.class)
+    @NotBlank(message = "У новости должен быть основной текст!")
+    @Length(message = "Длина основного текста должна быть не меньше 100 и не больше 10000 символов.", max=10000, min = 100)
     private String text;
 
     @ManyToOne
