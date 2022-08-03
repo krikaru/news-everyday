@@ -4,6 +4,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newsapi.dto.TokensResponseDto;
 import com.example.newsapi.model.AppUser;
+import com.example.newsapi.model.Role;
 import com.example.newsapi.util.CookieUtils;
 import com.example.newsapi.util.TokenUtils;
 import lombok.RequiredArgsConstructor;
@@ -12,17 +13,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -58,15 +58,18 @@ public class AuthorizationService {
         String email = decodedJWT.getSubject();
         String [] roles = decodedJWT.getClaim("roles").asArray(String.class);
 
-        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        Set<Role> authorities = new HashSet<>();
         Optional<AppUser> user = userService.findByEmail(email);
+        AppUser newUser = new AppUser();
         if (user.isPresent()) {
-            user.get().getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority(role.getAuthority())));
+            authorities.addAll(user.get().getRoles());
         } else {
-            Arrays.stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+            Arrays.stream(roles).forEach(role -> authorities.add(Role.valueOf(role)));
+            newUser.setEmail(email);
+            newUser.setRoles(authorities);
         }
         UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(user.orElse(null), null, authorities);
+                new UsernamePasswordAuthenticationToken(user.orElse(newUser), null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 
@@ -95,5 +98,13 @@ public class AuthorizationService {
                 "http://localhost:8080/api/token/refresh",
                 HttpMethod.GET, requestEntity, TokensResponseDto.class);
         return responseEntity == null ? null : responseEntity.getBody();
+    }
+
+    public AppUser getPrincipal() {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Collection<GrantedAuthority> authorities = user.getAuthorities();
+        Set<Role> roles = authorities.stream().map(grantedAuthority -> Role.valueOf(grantedAuthority.getAuthority())).collect(Collectors.toSet());
+
+        return AppUser.builder().email(user.getUsername()).roles(roles).build();
     }
 }

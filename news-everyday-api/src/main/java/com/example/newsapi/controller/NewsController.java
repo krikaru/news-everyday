@@ -4,14 +4,16 @@ import com.example.newsapi.dto.NewsErrorInfoDto;
 import com.example.newsapi.model.AppUser;
 import com.example.newsapi.model.News;
 import com.example.newsapi.model.Views;
+import com.example.newsapi.service.AuthorizationService;
 import com.example.newsapi.service.NewsService;
 import com.example.newsapi.util.BindingResultUtils;
 import com.fasterxml.jackson.annotation.JsonView;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,17 +24,18 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("api/news")
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 public class NewsController {
-    private final NewsService newsService;
+    @Autowired
+    private NewsService newsService;
+    @Autowired
+    private AuthorizationService authorizationService;
 
     @GetMapping
     @JsonView(Views.ShortNews.class)
     public ResponseEntity<List<News>> getAllNews() {
-        List<News> newsList = newsService.getAllNews();
-        return newsList.isEmpty() ?
-                new ResponseEntity<>(null, HttpStatus.NOT_FOUND) :
-                new ResponseEntity<>(newsList, HttpStatus.OK);
+        return new ResponseEntity<>(newsService.getAllNews(), HttpStatus.OK);
     }
 
     @GetMapping("{id}")
@@ -47,31 +50,30 @@ public class NewsController {
     @PostMapping
     @PreAuthorize("hasAuthority('WRITER')")
     @JsonView(Views.ShortNews.class)
-    public ResponseEntity<NewsErrorInfoDto> create(Authentication author,
-                                                   @Valid @RequestBody News news,
+    public ResponseEntity<NewsErrorInfoDto> create(@Valid @RequestBody News news,
                                                    BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(
                     new NewsErrorInfoDto(news, BindingResultUtils.getErrors(bindingResult)),
                     HttpStatus.BAD_REQUEST);
         } else {
-            AppUser principal = (AppUser) author.getPrincipal();
+            AppUser principal = authorizationService.getPrincipal();
+            News save = newsService.save(principal, news);
             return new ResponseEntity<>(
-                    new NewsErrorInfoDto(newsService.save(principal, news), null),
-                    HttpStatus.OK);
+                    new NewsErrorInfoDto(save, null),
+                    HttpStatus.CREATED);
         }
     }
 
     @PutMapping("{id}")
     @PreAuthorize("hasAuthority('WRITER')")
     @JsonView(Views.ShortNews.class)
-    public ResponseEntity<NewsErrorInfoDto> update(Authentication author,
-                                                   @PathVariable Long id,
+    public ResponseEntity<NewsErrorInfoDto> update(@PathVariable Long id,
                                                    @Valid @RequestBody News news,
                                                    BindingResult bindingResult)
     {
         Optional<News> optionalNews = newsService.findById(id);
-        AppUser principal = (AppUser) author.getPrincipal();
+        AppUser principal = authorizationService.getPrincipal();
         if (optionalNews.isEmpty()) {
             BindingResultUtils.addErrors(bindingResult,
                     "id",

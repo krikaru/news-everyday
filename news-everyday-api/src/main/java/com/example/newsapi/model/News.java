@@ -1,7 +1,7 @@
 package com.example.newsapi.model;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import lombok.Data;
+import lombok.*;
 import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
@@ -9,6 +9,10 @@ import javax.validation.constraints.NotBlank;
 
 @Entity
 @Data
+@EqualsAndHashCode(of = {"id", "header", "text"})
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class News {
     @Id
     @SequenceGenerator(name = "news_id_sequence", sequenceName = "news_id_sequence", allocationSize = 1)

@@ -4,11 +4,16 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.newsapi.dto.TokensResponseDto;
+import com.example.newsapi.model.AppUser;
+import com.example.newsapi.model.Role;
 import com.example.newsapi.util.TokenUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -22,11 +27,13 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.Cookie;
-
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -45,12 +52,14 @@ class AuthorizationServiceTest {
     Claim claim;
     @Mock
     TokensResponseDto tokensResponseDto;
+    @Mock
+    UserService userService;
     @Captor
     ArgumentCaptor<HttpEntity<Void>> httpEntity;
 
     @BeforeEach
     void setUp() {
-        authorizationService = spy(new AuthorizationService(tokenUtils, restTemplate));
+        authorizationService = spy(new AuthorizationService(tokenUtils, restTemplate, userService));
         response = new MockHttpServletResponse();
     }
 
@@ -111,18 +120,41 @@ class AuthorizationServiceTest {
 
     @Test
     @WithMockUser
-    void setAuthentication_checkFillAuthenticationObject() {
+    void setAuthentication_checkFillAuthenticationObjectIfUserAlreadyExistInDb() {
         when(decodedJWT.getSubject()).thenReturn("subject@test.ru");
         when(decodedJWT.getClaim("roles")).thenReturn(claim);
-        when(claim.asArray(String.class)).thenReturn(new String[]{"USER", "ADMIN"});
+        when(claim.asArray(String.class)).thenReturn(new String[]{"USER"});
+        AppUser appUser = new AppUser();
+        appUser.setEmail("subject@test.ru");
+        appUser.setRoles(Set.of(Role.USER, Role.ADMIN));
+        Optional<AppUser> userFromDb = Optional.of(appUser);
+        when(userService.findByEmail(anyString())).thenReturn(userFromDb);
 
         authorizationService.setAuthentication(decodedJWT);
 
         Authentication result = SecurityContextHolder.getContext().getAuthentication();
-        assertThat(result.getPrincipal()).isEqualTo("subject@test.ru");
-        assertTrue(result.getAuthorities().contains(new SimpleGrantedAuthority("USER")));
-        assertTrue(result.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN")));
+        AppUser principal = (AppUser) result.getPrincipal();
+        assertThat(principal.getEmail()).isEqualTo("subject@test.ru");
+        assertTrue(result.getAuthorities().contains(Role.USER));
+        assertTrue(result.getAuthorities().contains(Role.ADMIN));
 
+    }
+
+    @Test
+    @WithMockUser
+    void setAuthentication_checkFillAuthenticationObjectIfUserNotExistInDbYet() {
+        when(decodedJWT.getSubject()).thenReturn("subject@test.ru");
+        when(decodedJWT.getClaim("roles")).thenReturn(claim);
+        when(claim.asArray(String.class)).thenReturn(new String[]{"USER"});
+        when(userService.findByEmail(anyString())).thenReturn(Optional.empty());
+
+        authorizationService.setAuthentication(decodedJWT);
+
+        Authentication result = SecurityContextHolder.getContext().getAuthentication();
+        AppUser principal = (AppUser) result.getPrincipal();
+        assertThat(principal.getEmail()).isEqualTo("subject@test.ru");
+        assertTrue(result.getAuthorities().contains(Role.USER));
+        assertFalse(result.getAuthorities().contains(Role.ADMIN));
     }
 
     @Test
