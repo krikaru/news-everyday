@@ -33,8 +33,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -172,7 +171,8 @@ class NewsControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.news.id", equalTo(null)))
                 .andExpect(jsonPath("$.news.header", equalTo("NV")))
-                .andExpect(jsonPath("$.news.text", equalTo("Not_Valid_text_less_ten_100")));
+                .andExpect(jsonPath("$.news.text", equalTo("Not_Valid_text_less_ten_100")))
+                .andExpect(jsonPath("$.errors.text[0]", equalTo("Длина основного текста должна быть не меньше 100 и не больше 10000 символов.")));
     }
 
     @SneakyThrows
@@ -195,12 +195,80 @@ class NewsControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.news.id", equalTo(id), Long.class))
                 .andExpect(jsonPath("$.news.header", equalTo(header)))
-                .andExpect(jsonPath("$.news.text", equalTo(text)));
+                .andExpect(jsonPath("$.news.text", equalTo(text)))
+                .andExpect(jsonPath("$.errors", equalTo(null)));
     }
 
+    @SneakyThrows
     @Test
-    @WithMockUser
-    void update() {
+    @WithAnonymousUser
+    void update_return405IfAnonymousUser() {
+        News requestBodyNews = News.builder().header("any").text("any").build();
+
+        NestedServletException exception = Assertions.assertThrows(NestedServletException.class, () -> {
+            mockMvc.perform(put(NEWS_URL + "/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestBodyNews))
+                    .characterEncoding(CHARACTER_ENCODING));
+        });
+
+        assertThat(exception.getRootCause().getMessage()).isEqualTo("Access is denied");
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"USER"})
+    void update_return405IfHasNotAuthority() {
+        News requestBodyNews = News.builder().header("any").text("any").build();
+
+        NestedServletException exception = Assertions.assertThrows(NestedServletException.class, () -> {
+            mockMvc.perform(put(NEWS_URL + "/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestBodyNews))
+                    .characterEncoding(CHARACTER_ENCODING));
+        });
+
+        assertThat(exception.getRootCause().getMessage()).isEqualTo("Access is denied");
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void update_returnBadRequestIfNewsFieldsAreNotValid() {
+        News requestBodyNews = News.builder().header("NV").text("Not_Valid_text_less_ten_100").build();
+        mockMvc.perform(put(NEWS_URL + "/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBodyNews))
+                .characterEncoding(CHARACTER_ENCODING))
+
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.news.id", equalTo(null)))
+                .andExpect(jsonPath("$.news.header", equalTo("NV")))
+                .andExpect(jsonPath("$.news.text", equalTo("Not_Valid_text_less_ten_100")))
+                .andExpect(jsonPath("$.errors.text[0]", equalTo("Длина основного текста должна быть не меньше 100 и не больше 10000 символов.")));
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void update_returnBadRequestIfUpdatedNewsIsNotExistInDb() {
+        Long id = 1L;
+        String text = Strings.repeat("any", 34);
+        String header = "valid_header";
+        News requestBodyNews = News.builder().id(id).header(header).text(text).build();
+        when(newsService.findById(any())).thenReturn(Optional.empty());
+        when(authorizationService.getPrincipal()).thenReturn(new AppUser());
+
+        mockMvc.perform(put(NEWS_URL + "/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBodyNews))
+                .characterEncoding(CHARACTER_ENCODING))
+
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.news.id", equalTo(id), Long.class))
+                .andExpect(jsonPath("$.news.header", equalTo(header)))
+                .andExpect(jsonPath("$.news.text", equalTo(text)))
+                .andExpect(jsonPath("$.errors.id[0]", equalTo("Новость с таким id не существует!")));
     }
 
     @Test
