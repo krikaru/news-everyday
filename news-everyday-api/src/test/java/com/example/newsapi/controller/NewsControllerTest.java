@@ -31,8 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -287,7 +286,7 @@ class NewsControllerTest {
                 .andExpect(jsonPath("$.news.id", equalTo(null), Long.class))
                 .andExpect(jsonPath("$.news.header", equalTo(validRequestNewsHeader)))
                 .andExpect(jsonPath("$.news.text", equalTo(validRequestNewsText)))
-                .andExpect(jsonPath("$.errors.author[0]", equalTo("Вы не можете удалить эту новость!")));
+                .andExpect(jsonPath("$.errors.author[0]", equalTo("Вы не можете изменить эту новость!")));
     }
 
     @SneakyThrows
@@ -310,7 +309,61 @@ class NewsControllerTest {
                 .andExpect(jsonPath("$.errors", equalTo(null)));
     }
 
+    @SneakyThrows
     @Test
-    void delete() {
+    @WithAnonymousUser
+    void delete_return405IfAnonymousUser() {
+        NestedServletException exception = Assertions.assertThrows(
+                NestedServletException.class, () -> mockMvc.perform(delete(NEWS_URL + "/1")));
+
+        assertThat(exception.getRootCause().getMessage()).isEqualTo("Access is denied");
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"USER"})
+    void delete_return405IfHasNotAuthority() {
+        NestedServletException exception = Assertions.assertThrows(
+                NestedServletException.class, () -> mockMvc.perform(delete(NEWS_URL + "/1")));
+
+        assertThat(exception.getRootCause().getMessage()).isEqualTo("Access is denied");
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void delete_returnBadRequestIfDeletedNewsIsNotExistInDb() {
+        when(newsService.findById(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete(NEWS_URL + "/1"))
+
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.id[0]", equalTo("Новость с таким id не существует!")));
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void delete_returnBadRequestIfPrincipalNotEqualsToAuthorOfNews() {
+        when(newsService.findById(any())).thenReturn(Optional.of(newsFromDb));
+        when(authorizationService.getPrincipal()).thenReturn(AppUser.builder().id(2L).build());
+
+        mockMvc.perform(delete(NEWS_URL + "/1"))
+
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.author[0]", equalTo("Вы не можете удалить эту новость!")));
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void delete_returnOkIfNewsExistsAndUserHasPermission() {
+        when(newsService.findById(any())).thenReturn(Optional.of(newsFromDb));
+        when(authorizationService.getPrincipal()).thenReturn(AppUser.builder().id(3L).build());
+        doNothing().when(newsService).delete(any());
+        mockMvc.perform(delete(NEWS_URL + "/1"))
+
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").doesNotExist());
     }
 }

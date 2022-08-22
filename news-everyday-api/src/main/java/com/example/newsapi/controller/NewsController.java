@@ -18,9 +18,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("api/news")
@@ -89,7 +87,7 @@ public class NewsController {
             if (!authorId.equals(principal.getId())) {
                 BindingResultUtils.addErrors(bindingResult,
                         "author",
-                        "Вы не можете удалить эту новость!");
+                        "Вы не можете изменить эту новость!");
             }
         }
 
@@ -108,13 +106,19 @@ public class NewsController {
     @PreAuthorize("hasAuthority('WRITER')")
     public ResponseEntity<NewsErrorInfoDto> delete(@PathVariable Long id) {
         Optional<News> optionalNews = newsService.findById(id);
-        Map<String, List<String>> errors;
-        if (optionalNews.isPresent()) {
-            newsService.delete(id);
-            return new ResponseEntity<>(null, HttpStatus.OK);
-        }
-        errors = Map.of("id", List.of("Новость с таким id не существует!"));
-        return new ResponseEntity<>(new NewsErrorInfoDto(optionalNews.get(), errors), HttpStatus.BAD_REQUEST);
-    }
+        Map<String, List<String>> errors = new HashMap<>();
 
+        if (optionalNews.isPresent()) {
+            Long authorId = optionalNews.get().getAuthor().getId();
+            if (authorId.equals(authorizationService.getPrincipal().getId())) {
+                newsService.delete(id);
+                return new ResponseEntity<>(null, HttpStatus.OK);
+            } else {
+                errors.put("author", List.of("Вы не можете удалить эту новость!"));
+            }
+        } else {
+            errors.put("id", List.of("Новость с таким id не существует!"));
+        }
+        return new ResponseEntity<>(new NewsErrorInfoDto(null, errors), HttpStatus.BAD_REQUEST);
+    }
 }
