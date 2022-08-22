@@ -72,6 +72,12 @@ public class NewsController {
                                                    @Valid @RequestBody News news,
                                                    BindingResult bindingResult)
     {
+        if (bindingResult.hasErrors()) {
+            return new ResponseEntity<>(
+                    new NewsErrorInfoDto(news, BindingResultUtils.getErrors(bindingResult)),
+                    HttpStatus.BAD_REQUEST);
+        }
+
         Optional<News> optionalNews = newsService.findById(id);
         AppUser principal = authorizationService.getPrincipal();
         if (optionalNews.isEmpty()) {
@@ -96,8 +102,6 @@ public class NewsController {
                     new NewsErrorInfoDto(newsService.update(news, optionalNews.get()), null),
                     HttpStatus.OK);
         }
-
-
     }
 
     @DeleteMapping("{id}")

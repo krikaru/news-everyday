@@ -44,6 +44,26 @@ class NewsControllerTest {
     static final String NEWS_URL = "/api/news";
     static final String CHARACTER_ENCODING = "utf-8";
 
+    static final String notValidRequestNewsHeader = "notV";
+    static final String notValidRequestNewsText = "text";
+    static final News notValidRequestNews = News.builder()
+            .header(notValidRequestNewsHeader).text(notValidRequestNewsText).build();
+
+    static final String validRequestNewsHeader = "valid_header";
+    static final String validRequestNewsText = Strings.repeat("any", 34);
+    static News validRequestNews = News.builder()
+            .header(validRequestNewsHeader).text(validRequestNewsText).build();
+
+    static final Long idFromDb = 1L;
+    static final String headerFromDb = "Db_" + validRequestNewsHeader;
+    static final String textFromDb = "Db_" + validRequestNewsText;
+    static final AppUser author = AppUser.builder().id(3L).build();
+    static final News newsFromDb = News.builder()
+            .id(idFromDb).header(headerFromDb).text(textFromDb).author(author).build();
+
+    static final News updatedNews = News.builder()
+            .id(idFromDb).header(validRequestNewsHeader).text(validRequestNewsText).author(author).build();
+
     @MockBean
     NewsService newsService;
     @MockBean
@@ -95,10 +115,7 @@ class NewsControllerTest {
     @SneakyThrows
     @Test
     void getOneNews_ifNewsIsExist() {
-        String header = "header";
-        String text = "text";
-        News news = News.builder().id(1L).header(header).text(text).build();
-        Optional<News> optionalNews = Optional.of(news);
+        Optional<News> optionalNews = Optional.of(newsFromDb);
         when(newsService.findById(any())).thenReturn(optionalNews);
 
         mockMvc.perform(get(NEWS_URL + "/1")
@@ -108,8 +125,8 @@ class NewsControllerTest {
 
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", equalTo(1L), Long.class))
-                .andExpect(jsonPath("$.header", equalTo(header)))
-                .andExpect(jsonPath("$.text", equalTo(text)));
+                .andExpect(jsonPath("$.header", equalTo(headerFromDb)))
+                .andExpect(jsonPath("$.text", equalTo(textFromDb)));
     }
 
     @SneakyThrows
@@ -130,12 +147,10 @@ class NewsControllerTest {
     @Test
     @WithAnonymousUser
     void create_return405IfAnonymousUser() {
-        News requestBodyNews = News.builder().header("any").text("any").build();
-
         NestedServletException exception = Assertions.assertThrows(NestedServletException.class, () -> {
             mockMvc.perform(post(NEWS_URL)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(requestBodyNews))
+                    .content(objectMapper.writeValueAsString(validRequestNews))
                     .characterEncoding(CHARACTER_ENCODING));
         });
 
@@ -146,12 +161,10 @@ class NewsControllerTest {
     @Test
     @WithMockUser(authorities = {"USER"})
     void create_return405IfHasNotAuthority() {
-        News requestBodyNews = News.builder().header("any").text("any").build();
-
         NestedServletException exception = Assertions.assertThrows(NestedServletException.class, () -> {
             mockMvc.perform(post(NEWS_URL)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(requestBodyNews))
+                    .content(objectMapper.writeValueAsString(validRequestNews))
                     .characterEncoding(CHARACTER_ENCODING));
         });
 
@@ -162,16 +175,16 @@ class NewsControllerTest {
     @Test
     @WithMockUser(authorities = {"WRITER"})
     void create_returnBadRequestIfNewsFieldsAreNotValid() {
-        News requestBodyNews = News.builder().header("NV").text("Not_Valid_text_less_ten_100").build();
         mockMvc.perform(post(NEWS_URL)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestBodyNews))
+                .content(objectMapper.writeValueAsString(notValidRequestNews))
                 .characterEncoding(CHARACTER_ENCODING))
 
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.news.id", equalTo(null)))
-                .andExpect(jsonPath("$.news.header", equalTo("NV")))
-                .andExpect(jsonPath("$.news.text", equalTo("Not_Valid_text_less_ten_100")))
+                .andExpect(jsonPath("$.news.header", equalTo(notValidRequestNewsHeader)))
+                .andExpect(jsonPath("$.news.text", equalTo(notValidRequestNewsText)))
+                .andExpect(jsonPath("$.errors.header[0]", equalTo("Длина закголовка должна быть не меньше 5 и не больше 100 символов.")))
                 .andExpect(jsonPath("$.errors.text[0]", equalTo("Длина основного текста должна быть не меньше 100 и не больше 10000 символов.")));
     }
 
@@ -179,23 +192,18 @@ class NewsControllerTest {
     @Test
     @WithMockUser(username = "test@test.ru", authorities = {"WRITER"})
     void create_returnCreatedAndBodyIfNewsFieldsAreValid() {
-        Long id = 1L;
-        String text = Strings.repeat("any", 34);
-        String header = "valid_header";
-        News requestBodyNews = News.builder().header(header).text(text).build();
-        News newsFromDb = News.builder().id(id).header(header).text(text).build();
-        when(newsService.save(any(), any())).thenReturn(newsFromDb);
+        when(newsService.save(any(), any())).thenReturn(updatedNews);
         when(authorizationService.getPrincipal()).thenReturn(new AppUser());
 
         mockMvc.perform(post(NEWS_URL)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestBodyNews))
+                .content(objectMapper.writeValueAsString(validRequestNews))
                 .characterEncoding(CHARACTER_ENCODING))
 
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.news.id", equalTo(id), Long.class))
-                .andExpect(jsonPath("$.news.header", equalTo(header)))
-                .andExpect(jsonPath("$.news.text", equalTo(text)))
+                .andExpect(jsonPath("$.news.id", equalTo(updatedNews.getId()), Long.class))
+                .andExpect(jsonPath("$.news.header", equalTo(updatedNews.getHeader())))
+                .andExpect(jsonPath("$.news.text", equalTo(updatedNews.getText())))
                 .andExpect(jsonPath("$.errors", equalTo(null)));
     }
 
@@ -203,12 +211,10 @@ class NewsControllerTest {
     @Test
     @WithAnonymousUser
     void update_return405IfAnonymousUser() {
-        News requestBodyNews = News.builder().header("any").text("any").build();
-
         NestedServletException exception = Assertions.assertThrows(NestedServletException.class, () -> {
             mockMvc.perform(put(NEWS_URL + "/1")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(requestBodyNews))
+                    .content(objectMapper.writeValueAsString(validRequestNews))
                     .characterEncoding(CHARACTER_ENCODING));
         });
 
@@ -219,12 +225,10 @@ class NewsControllerTest {
     @Test
     @WithMockUser(authorities = {"USER"})
     void update_return405IfHasNotAuthority() {
-        News requestBodyNews = News.builder().header("any").text("any").build();
-
         NestedServletException exception = Assertions.assertThrows(NestedServletException.class, () -> {
             mockMvc.perform(put(NEWS_URL + "/1")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(requestBodyNews))
+                    .content(objectMapper.writeValueAsString(validRequestNews))
                     .characterEncoding(CHARACTER_ENCODING));
         });
 
@@ -235,16 +239,16 @@ class NewsControllerTest {
     @Test
     @WithMockUser(authorities = {"WRITER"})
     void update_returnBadRequestIfNewsFieldsAreNotValid() {
-        News requestBodyNews = News.builder().header("NV").text("Not_Valid_text_less_ten_100").build();
         mockMvc.perform(put(NEWS_URL + "/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestBodyNews))
+                .content(objectMapper.writeValueAsString(notValidRequestNews))
                 .characterEncoding(CHARACTER_ENCODING))
 
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.news.id", equalTo(null)))
-                .andExpect(jsonPath("$.news.header", equalTo("NV")))
-                .andExpect(jsonPath("$.news.text", equalTo("Not_Valid_text_less_ten_100")))
+                .andExpect(jsonPath("$.news.header", equalTo(notValidRequestNewsHeader)))
+                .andExpect(jsonPath("$.news.text", equalTo(notValidRequestNewsText)))
+                .andExpect(jsonPath("$.errors.header[0]", equalTo("Длина закголовка должна быть не меньше 5 и не больше 100 символов.")))
                 .andExpect(jsonPath("$.errors.text[0]", equalTo("Длина основного текста должна быть не меньше 100 и не больше 10000 символов.")));
     }
 
@@ -252,23 +256,58 @@ class NewsControllerTest {
     @Test
     @WithMockUser(authorities = {"WRITER"})
     void update_returnBadRequestIfUpdatedNewsIsNotExistInDb() {
-        Long id = 1L;
-        String text = Strings.repeat("any", 34);
-        String header = "valid_header";
-        News requestBodyNews = News.builder().id(id).header(header).text(text).build();
         when(newsService.findById(any())).thenReturn(Optional.empty());
         when(authorizationService.getPrincipal()).thenReturn(new AppUser());
 
         mockMvc.perform(put(NEWS_URL + "/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestBodyNews))
+                .content(objectMapper.writeValueAsString(validRequestNews))
                 .characterEncoding(CHARACTER_ENCODING))
 
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.news.id", equalTo(id), Long.class))
-                .andExpect(jsonPath("$.news.header", equalTo(header)))
-                .andExpect(jsonPath("$.news.text", equalTo(text)))
+                .andExpect(jsonPath("$.news.id", equalTo(null)))
+                .andExpect(jsonPath("$.news.header", equalTo(validRequestNewsHeader)))
+                .andExpect(jsonPath("$.news.text", equalTo(validRequestNewsText)))
                 .andExpect(jsonPath("$.errors.id[0]", equalTo("Новость с таким id не существует!")));
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void update_returnBadRequestIfPrincipalNotEqualsToAuthorOfNews() {
+        when(newsService.findById(any())).thenReturn(Optional.of(newsFromDb));
+        when(authorizationService.getPrincipal()).thenReturn(AppUser.builder().id(2L).build());
+
+        mockMvc.perform(put(NEWS_URL + "/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequestNews))
+                .characterEncoding(CHARACTER_ENCODING))
+
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.news.id", equalTo(null), Long.class))
+                .andExpect(jsonPath("$.news.header", equalTo(validRequestNewsHeader)))
+                .andExpect(jsonPath("$.news.text", equalTo(validRequestNewsText)))
+                .andExpect(jsonPath("$.errors.author[0]", equalTo("Вы не можете удалить эту новость!")));
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void update_returnOkIfNewsValidAndUserHasPermission() {
+        when(newsService.findById(any())).thenReturn(Optional.of(newsFromDb));
+        when(authorizationService.getPrincipal()).thenReturn(AppUser.builder().id(3L).build());
+        when(newsService.update(any(), any())).thenReturn(updatedNews);
+
+        mockMvc.perform(put(NEWS_URL + "/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequestNews))
+                .characterEncoding(CHARACTER_ENCODING))
+
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.news.id", equalTo(updatedNews.getId()), Long.class))
+                .andExpect(jsonPath("$.news.header", equalTo(updatedNews.getHeader())))
+                .andExpect(jsonPath("$.news.text", equalTo(updatedNews.getText())))
+                .andExpect(jsonPath("$.errors", equalTo(null)));
     }
 
     @Test
