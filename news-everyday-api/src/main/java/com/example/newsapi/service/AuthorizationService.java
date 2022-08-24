@@ -13,16 +13,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -101,10 +101,6 @@ public class AuthorizationService {
     }
 
     public AppUser getPrincipal() {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Collection<GrantedAuthority> authorities = user.getAuthorities();
-        Set<Role> roles = authorities.stream().map(grantedAuthority -> Role.valueOf(grantedAuthority.getAuthority())).collect(Collectors.toSet());
-
-        return AppUser.builder().email(user.getUsername()).roles(roles).build();
+        return (AppUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }
