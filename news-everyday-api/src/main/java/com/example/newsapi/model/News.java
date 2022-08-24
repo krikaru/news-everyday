@@ -6,6 +6,7 @@ import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import java.util.Set;
 
 @Entity
 @Data
@@ -34,4 +35,12 @@ public class News {
     @JoinColumn(name = "author_id")
     @JsonView(Views.ShortNews.class)
     private AppUser author;
+
+    @ManyToMany
+    @JoinTable(
+            name = "news_likes",
+            joinColumns = {@JoinColumn(name = "news_id")},
+            inverseJoinColumns = {@JoinColumn(name = "user_id")}
+    )
+    private Set<AppUser> likes;
 }

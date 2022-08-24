@@ -1,5 +1,6 @@
 package com.example.newsapi.controller;
 
+import com.example.newsapi.dto.LikeDto;
 import com.example.newsapi.dto.NewsErrorInfoDto;
 import com.example.newsapi.model.AppUser;
 import com.example.newsapi.model.News;
@@ -120,5 +121,22 @@ public class NewsController {
             errors.put("id", List.of("Новость с таким id не существует!"));
         }
         return new ResponseEntity<>(new NewsErrorInfoDto(null, errors), HttpStatus.BAD_REQUEST);
+    }
+
+    @GetMapping("{id}/like")
+    @JsonView(Views.ShortNews.class)
+    @PreAuthorize("hasAnyAuthority('WRITER', 'USER')")
+    public ResponseEntity<LikeDto> like(@PathVariable Long id) {
+        Optional<News> optionalNews = newsService.findById(id);
+        if (optionalNews.isPresent()) {
+            int count = newsService.like(optionalNews.get(), authorizationService.getPrincipal());
+            return new ResponseEntity<>(
+                    new LikeDto(count, null),
+                    HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(
+                    new LikeDto(-1, Map.of("like", List.of("Такой новости не существует"))),
+                    HttpStatus.BAD_REQUEST);
+        }
     }
 }

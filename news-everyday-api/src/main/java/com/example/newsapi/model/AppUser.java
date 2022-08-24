@@ -19,6 +19,7 @@ import java.util.Set;
 @AllArgsConstructor
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Builder
+@EqualsAndHashCode(of = {"id", "email"})
 public class AppUser {
     @Id
     @SequenceGenerator(

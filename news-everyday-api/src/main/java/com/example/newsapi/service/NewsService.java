@@ -3,16 +3,19 @@ package com.example.newsapi.service;
 import com.example.newsapi.model.AppUser;
 import com.example.newsapi.model.News;
 import com.example.newsapi.repo.NewsRepo;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 public class NewsService {
-    private final NewsRepo newsRepo;
+    private NewsRepo newsRepo;
 
     public List<News> getAllNews() {
         return newsRepo.findAll();
@@ -35,5 +38,16 @@ public class NewsService {
         newsFromDb.setHeader(newNews.getHeader());
         newsFromDb.setText(newNews.getText());
         return newsRepo.save(newsFromDb);
+    }
+
+    public int like(News news, AppUser principal) {
+        Set<AppUser> likes = news.getLikes();
+        if (likes.contains(principal)) {
+            likes.remove(principal);
+        } else {
+            likes.add(principal);
+        }
+        newsRepo.save(news);
+        return likes.size();
     }
 }

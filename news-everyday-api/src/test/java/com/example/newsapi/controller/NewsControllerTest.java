@@ -366,4 +366,44 @@ class NewsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").doesNotExist());
     }
+
+    @SneakyThrows
+    @Test
+    @WithAnonymousUser
+    void like_return405IfAnonymousUser() {
+        NestedServletException exception = Assertions.assertThrows(NestedServletException.class, () -> {
+            mockMvc.perform(get(NEWS_URL + "/1/like"));
+        });
+
+        assertThat(exception.getRootCause().getMessage()).isEqualTo("Access is denied");
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void like_return400IfNewsNotExists() {
+        when(newsService.findById(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(get(NEWS_URL + "/1/like"))
+
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.like[0]", equalTo("Такой новости не существует")));
+    }
+
+    @SneakyThrows
+    @Test
+    @WithMockUser(authorities = {"WRITER"})
+    void like_returnOkIfNewsExists() {
+        int count = 1;
+        when(newsService.findById(any())).thenReturn(Optional.of(newsFromDb));
+        when(newsService.like(any(), any())).thenReturn(count);
+        when(authorizationService.getPrincipal()).thenReturn(new AppUser());
+
+        mockMvc.perform(get(NEWS_URL + "/1/like"))
+
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count", equalTo(count)))
+                .andExpect(jsonPath("$.errors", equalTo(null)));
+    }
+
 }
