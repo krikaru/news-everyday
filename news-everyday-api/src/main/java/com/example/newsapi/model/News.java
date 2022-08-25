@@ -1,11 +1,14 @@
 package com.example.newsapi.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonView;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Set;
 
 @Entity
@@ -43,4 +46,9 @@ public class News {
             inverseJoinColumns = {@JoinColumn(name = "user_id")}
     )
     private Set<AppUser> likes;
+
+    @Column(updatable = false)
+    @JsonView(Views.ShortNews.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy HH:mm")
+    private LocalDateTime creationDate;
 }

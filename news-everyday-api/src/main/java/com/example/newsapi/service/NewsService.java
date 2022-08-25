@@ -5,8 +5,10 @@ import com.example.newsapi.model.News;
 import com.example.newsapi.repo.NewsRepo;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -15,6 +17,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NewsService {
+    @Autowired
     private NewsRepo newsRepo;
 
     public List<News> getAllNews() {
@@ -22,6 +25,7 @@ public class NewsService {
     }
 
     public News save(AppUser author, News news) {
+        news.setCreationDate(LocalDateTime.now());
         news.setAuthor(author);
         return newsRepo.save(news);
     }
