@@ -8,18 +8,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.HashSet;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
@@ -34,6 +35,7 @@ class NewsServiceTest {
     static final News news = News.builder()
             .header(header).text(text).build();
     static final HashSet<AppUser> likes = new HashSet<>();
+
     @BeforeEach
     void setUp() {
         likes.add(user2);
@@ -49,6 +51,28 @@ class NewsServiceTest {
 
     @InjectMocks
     NewsService newsService;
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"unknown"})
+    void getAllNews_sortByDateIfParamIsNullOrUnknown(String sort) {
+        when(newsRepo.findAllSortByCreationDate()).thenReturn(null);
+        when(newsRepo.findAllSortByQuantityLike()).thenReturn(null);
+
+        newsService.getAllNews(sort);
+
+        verify(newsRepo).findAllSortByCreationDate();
+    }
+
+    @Test
+    void getAllNews_sortByLikeIfParamEqualsLike() {
+        when(newsRepo.findAllSortByCreationDate()).thenReturn(null);
+        when(newsRepo.findAllSortByQuantityLike()).thenReturn(null);
+
+        newsService.getAllNews("like");
+
+        verify(newsRepo).findAllSortByQuantityLike();
+    }
 
     @Test
     void like_ifPrincipalLikeNews() {

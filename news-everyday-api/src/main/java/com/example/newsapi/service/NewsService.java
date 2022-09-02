@@ -20,8 +20,12 @@ public class NewsService {
     @Autowired
     private NewsRepo newsRepo;
 
-    public List<News> getAllNews() {
-        return newsRepo.findAll();
+    public List<News> getAllNews(String sort) {
+        return sort == null ? newsRepo.findAllSortByCreationDate() : switch (sort) {
+            case "like" -> newsRepo.findAllSortByQuantityLike();
+            case "comment" -> throw new UnsupportedOperationException("It's not realised method yet");
+            default -> newsRepo.findAllSortByCreationDate();
+        };
     }
 
     public News save(AppUser author, News news) {

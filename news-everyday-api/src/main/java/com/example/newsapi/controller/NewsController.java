@@ -33,8 +33,8 @@ public class NewsController {
 
     @GetMapping
     @JsonView(Views.ShortNews.class)
-    public ResponseEntity<List<News>> getAllNews() {
-        return new ResponseEntity<>(newsService.getAllNews(), HttpStatus.OK);
+    public ResponseEntity<List<News>> getAllNews(@RequestParam(required = false) String sort) {
+        return new ResponseEntity<>(newsService.getAllNews(sort), HttpStatus.OK);
     }
 
     @GetMapping("{id}")

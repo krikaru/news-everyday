@@ -88,7 +88,7 @@ class NewsControllerTest {
     void getAllNews_ifNewsIsExist() {
         List<News> newsList = List.of(News.builder().header("header1").text("text1").build(),
                 News.builder().header("header1").text("text1").build());
-        when(newsService.getAllNews()).thenReturn(newsList);
+        when(newsService.getAllNews(any())).thenReturn(newsList);
 
         mockMvc.perform(get(NEWS_URL)
                 .accept(MediaType.APPLICATION_JSON)
