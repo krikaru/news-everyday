@@ -19,7 +19,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("api/news")
@@ -33,8 +36,11 @@ public class NewsController {
 
     @GetMapping
     @JsonView(Views.ShortNews.class)
-    public ResponseEntity<List<News>> getAllNews(@RequestParam(required = false) String sort) {
-        return new ResponseEntity<>(newsService.getAllNews(sort), HttpStatus.OK);
+    public ResponseEntity<List<News>> getAllNews(@RequestParam(required = false) String sort,
+                                                 @RequestParam(required = false) Integer author,
+                                                 @RequestParam(required = false) String date) {
+
+        return new ResponseEntity<>(newsService.getAllNews(sort, author, date), HttpStatus.OK);
     }
 
     @GetMapping("{id}")

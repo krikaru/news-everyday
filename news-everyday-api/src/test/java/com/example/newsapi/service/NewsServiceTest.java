@@ -9,14 +9,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.HashSet;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +38,16 @@ class NewsServiceTest {
             .header(header).text(text).build();
     static final HashSet<AppUser> likes = new HashSet<>();
 
+    @MockBean
+    NewsRepo newsRepo;
+    @InjectMocks
+    NewsService newsService;
+
+    @Captor
+    ArgumentCaptor<String> capturedString;
+    @Captor
+    ArgumentCaptor<Integer> capturedInteger;
+
     @BeforeEach
     void setUp() {
         likes.add(user2);
@@ -46,32 +58,42 @@ class NewsServiceTest {
         news.setLikes(null);
     }
 
-    @MockBean
-    NewsRepo newsRepo;
-
-    @InjectMocks
-    NewsService newsService;
-
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(strings = {"unknown"})
-    void getAllNews_sortByDateIfParamIsNullOrUnknown(String sort) {
-        when(newsRepo.findAllSortByCreationDate()).thenReturn(null);
-        when(newsRepo.findAllSortByQuantityLike()).thenReturn(null);
-
-        newsService.getAllNews(sort);
-
-        verify(newsRepo).findAllSortByCreationDate();
+    private static Stream<Arguments> provideArgumentsForGetAllNews() {
+        return Stream.of(
+                Arguments.of(null, null, null, -1, "-1"),
+                Arguments.of("unknown", null, null, -1, "-1"),
+                Arguments.of("date", null, null, -1, "-1"),
+                Arguments.of("date", 1, null, 1, "-1"),
+                Arguments.of("date", null, "2022-08-25", -1, "2022-08-25"),
+                Arguments.of("date", null, "2022-25-25", -1, "-1"),
+                Arguments.of("date", 1, "2022-08-25", 1, "2022-08-25"),
+                Arguments.of("like", null, null, -1, "-1"),
+                Arguments.of("like", 1, null, 1, "-1"),
+                Arguments.of("like", null, "2022-08-25", -1, "2022-08-25"),
+                Arguments.of("like", null, "2022-25-25", -1, "-1"),
+                Arguments.of("like", 1, "2022-08-25", 1, "2022-08-25")
+        );
     }
 
-    @Test
-    void getAllNews_sortByLikeIfParamEqualsLike() {
-        when(newsRepo.findAllSortByCreationDate()).thenReturn(null);
-        when(newsRepo.findAllSortByQuantityLike()).thenReturn(null);
+    @ParameterizedTest
+    @MethodSource("provideArgumentsForGetAllNews")
+    void getAllNews_sortWithArguments(String sort, Integer authorId, String date,
+                                                     Integer expectedAuthorId, String expectedDate) {
+        when(newsRepo.findAllSortByCreationDate(date, authorId)).thenReturn(null);
+        when(newsRepo.findAllSortByQuantityLike(date, authorId)).thenReturn(null);
 
-        newsService.getAllNews("like");
+        newsService.getAllNews(sort, authorId, date);
 
-        verify(newsRepo).findAllSortByQuantityLike();
+        if (sort == null) {
+            verify(newsRepo).findAllSortByCreationDate(capturedString.capture(), capturedInteger.capture());
+        } else {
+            switch (sort) {
+                case "like" -> verify(newsRepo).findAllSortByQuantityLike(capturedString.capture(), capturedInteger.capture());
+                default -> verify(newsRepo).findAllSortByCreationDate(capturedString.capture(), capturedInteger.capture());
+            }
+        }
+        assertThat(capturedInteger.getValue()).isEqualTo(expectedAuthorId);
+        assertThat(capturedString.getValue()).isEqualTo(expectedDate);
     }
 
     @Test

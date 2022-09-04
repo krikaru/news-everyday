@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.example.newsapi.util.DateTimeUtils.isValidDate;
+
 @Service
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,11 +22,14 @@ public class NewsService {
     @Autowired
     private NewsRepo newsRepo;
 
-    public List<News> getAllNews(String sort) {
-        return sort == null ? newsRepo.findAllSortByCreationDate() : switch (sort) {
-            case "like" -> newsRepo.findAllSortByQuantityLike();
+    public List<News> getAllNews(String sort, Integer authorId, String dateStr) {
+        String filterDate = isValidDate(dateStr) ? dateStr  : "-1";
+        Integer filterAuthorId = authorId == null ? -1 : authorId;
+
+        return sort == null ? newsRepo.findAllSortByCreationDate(filterDate, filterAuthorId) : switch (sort) {
+            case "like" -> newsRepo.findAllSortByQuantityLike(filterDate, filterAuthorId);
             case "comment" -> throw new UnsupportedOperationException("It's not realised method yet");
-            default -> newsRepo.findAllSortByCreationDate();
+            default -> newsRepo.findAllSortByCreationDate(filterDate, filterAuthorId);
         };
     }
 
