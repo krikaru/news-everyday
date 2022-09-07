@@ -3,12 +3,17 @@ package com.example.newsapi.service;
 import com.example.newsapi.model.AppUser;
 import com.example.newsapi.model.News;
 import com.example.newsapi.repo.NewsRepo;
+import com.example.newsapi.util.DateTimeUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -22,14 +27,13 @@ public class NewsService {
     @Autowired
     private NewsRepo newsRepo;
 
-    public List<News> getAllNews(String sort, Integer authorId, String dateStr) {
-        String filterDate = isValidDate(dateStr) ? dateStr  : "-1";
-        Integer filterAuthorId = authorId == null ? -1 : authorId;
+    public List<News> getAllNews(String sort, Long authorId, String dateStr) {
+        String filterDate = isValidDate(dateStr) ? dateStr : null;
 
-        return sort == null ? newsRepo.findAllSortByCreationDate(filterDate, filterAuthorId) : switch (sort) {
-            case "like" -> newsRepo.findAllSortByQuantityLike(filterDate, filterAuthorId);
+        return sort == null ? newsRepo.findAllSortByCreationDate(filterDate, authorId) : switch (sort) {
+            case "like" -> newsRepo.findAllSortByQuantityLike(filterDate, authorId);
             case "comment" -> throw new UnsupportedOperationException("It's not realised method yet");
-            default -> newsRepo.findAllSortByCreationDate(filterDate, filterAuthorId);
+            default -> newsRepo.findAllSortByCreationDate(filterDate, authorId);
         };
     }
 
