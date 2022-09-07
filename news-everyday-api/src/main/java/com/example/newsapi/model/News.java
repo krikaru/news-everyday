@@ -1,14 +1,16 @@
 package com.example.newsapi.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -17,6 +19,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class News {
     @Id
     @SequenceGenerator(name = "news_id_sequence", sequenceName = "news_id_sequence", allocationSize = 1)
@@ -35,7 +38,7 @@ public class News {
     private String text;
 
     @ManyToOne
-    @JoinColumn(name = "author_id")
+    @JoinColumn(name = "author_id", nullable = false, updatable = false)
     @JsonView(Views.ShortNews.class)
     private AppUser author;
 
@@ -51,4 +54,8 @@ public class News {
     @JsonView(Views.ShortNews.class)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy HH:mm")
     private LocalDateTime creationDate;
+
+    @OneToMany(mappedBy = "news", orphanRemoval = true)
+    @JsonView(Views.ShortNews.class)
+    private List<Comment> comments;
 }
