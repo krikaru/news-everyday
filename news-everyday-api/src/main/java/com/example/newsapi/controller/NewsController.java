@@ -37,7 +37,7 @@ public class NewsController {
     @GetMapping
     @JsonView(Views.ShortNews.class)
     public ResponseEntity<List<News>> getAllNews(@RequestParam(required = false) String sort,
-                                                 @RequestParam(required = false) Integer author,
+                                                 @RequestParam(required = false) Long author,
                                                  @RequestParam(required = false) String date) {
 
         return new ResponseEntity<>(newsService.getAllNews(sort, author, date), HttpStatus.OK);
