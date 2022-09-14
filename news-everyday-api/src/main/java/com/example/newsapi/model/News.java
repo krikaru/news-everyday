@@ -16,6 +16,7 @@ import java.util.Set;
 @Entity
 @Data
 @EqualsAndHashCode(of = {"id", "header", "text"})
+@ToString(exclude = {"author", "likes", "comments"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

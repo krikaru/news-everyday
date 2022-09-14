@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,14 +34,13 @@ public class UserService {
         this.authorizationService = authorizationService;
     }
 
+    public List<AppUser> getAllUsers() {
+        return userRepo.findAll();
+    }
 
-//    public AppUser createUser(AppUser user) {
-//        return userRepo.save(user);
-//    }
-//
-//    public List<AppUser> getAllUsers() {
-//        return userRepo.findAll();
-//    }
+    public Optional<AppUser> findById(Long id) {
+        return userRepo.findById(id);
+    }
 
     public AppUser auth(UserRequestDto userRequestDto, HttpServletResponse response) {
         TokensResponseDto tokensResponseDto = restTemplate.postForObject(
