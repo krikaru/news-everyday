@@ -12,28 +12,32 @@ import java.util.List;
 @Repository
 public interface NewsRepo extends JpaRepository<News, Long> {
 
-    @EntityGraph(attributePaths = { "comments" })
+    @EntityGraph(attributePaths = { "comments", "author" })
     @Query("from News n " +
             "left join n.comments c " +
-            "where (cast(:filterDate as date) is null or cast(:filterDate as date) = cast(n.creationDate as date)) AND " +
+            "left join n.author a " +
+            "where (cast(cast(:filterDate as text) as date) is null or " +
+            "cast(cast(:filterDate as text) as date) = cast(n.creationDate as date)) AND " +
             "(:author is null or :author = n.author.id ) " +
-            "group by n.id, n.creationDate, c.id " +
+            "group by n.id, n.creationDate, c.id, a.id " +
             "order by size(n.likes) desc, n.creationDate desc")
     List<News> findAllSortByQuantityLike(@Param("filterDate") String date, @Param("author") Long author);
 
-    @EntityGraph(attributePaths = { "comments" })
+    @EntityGraph(attributePaths = { "comments", "author" })
     @Query("from News n " +
             "left join n.comments c " +
-            "where (cast(:filterDate as date) is null or cast(:filterDate as date) = cast(n.creationDate as date)) AND " +
+            "where (cast(cast(:filterDate as text) as date) is null or " +
+            "cast(cast(:filterDate as text) as date) = cast(n.creationDate as date)) AND " +
             "(:author is null or :author = n.author.id ) " +
             "group by n.id, n.creationDate, c.id " +
             "order by size(n.comments) desc, n.creationDate desc")
     List<News> findAllSortByQuantityComment(@Param("filterDate") String date, @Param("author") Long author);
 
-    @EntityGraph(attributePaths = { "comments" })
+    @EntityGraph(attributePaths = { "comments", "author" })
     @Query("from News n " +
             "left join n.comments c " +
-            "where (cast(:filterDate as date) is null or cast(:filterDate as date) = cast(n.creationDate as date)) AND " +
+            "where (cast(cast(:filterDate as text) as date) is null or " +
+            "cast(cast(:filterDate as text) as date) = cast(n.creationDate as date)) AND " +
             "(:author is null or :author = n.author.id ) " +
             "group by n.id, n.creationDate, c.id " +
             "order by n.creationDate desc")
