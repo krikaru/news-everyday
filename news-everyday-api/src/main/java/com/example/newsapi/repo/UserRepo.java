@@ -10,11 +10,11 @@ import java.util.Optional;
 @Repository
 public interface UserRepo extends JpaRepository<AppUser, Long> {
 
-    @EntityGraph(attributePaths = { "roles", "lockAccount" })
+    @EntityGraph(attributePaths = { "roles" })
     Optional<AppUser> findByEmail(String email);
 
     @Override
-    @EntityGraph(attributePaths = { "roles", "lockAccount" })
+    @EntityGraph(attributePaths = { "roles" })
     Optional<AppUser> findById(Long id);
 }
 

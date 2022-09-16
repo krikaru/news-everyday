@@ -12,11 +12,11 @@ import java.util.Set;
 @Entity
 @Table(name = "usr")
 @Data
-@ToString(of = {"id", "email"})
+@ToString(exclude = {"roles", "newsList", "comments"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(of = {"id", "email"})
+@EqualsAndHashCode(of = {"email"})
 public class AppUser {
     @Id
     @SequenceGenerator(
